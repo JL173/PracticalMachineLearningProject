@@ -191,16 +191,10 @@ dev.off()
 cl <- makePSOCKcluster(5) # init parallel processing
 registerDoParallel(cl)
 
-GBMgrid <- expand.grid(n.trees = c(1, 3, 5, 7),
-                       n.minobsinnode = c(1, 2, 3),
-                       interaction.depth = c(5, 10, 15, 30),
-                       shrinkage = c(0.01, 0.03, 0.1, 0.3))
 
 # a boosted classification tree for stacking
 wGBM <- train(classe ~ ., method = "gbm",
-              #tfControl = ctrl, 
               preProcess = c("center", "scale"),
-              #tuneGrid = GBMgrid,
               data = wTrain)
 
 stopCluster(cl) # stop parallel processing
@@ -223,3 +217,50 @@ From the models, we can see that the best parameters are
 - Gradient Boosted Classifier: Max Iter = 150, Max Depth = 3
 
 Well combine the best three models with a random forest to create a blended model
+
+```{r}
+cl <- makePSOCKcluster(5) # init parallel processing
+registerDoParallel(cl)
+
+in_train <- data.frame(classe = wTest$classe,
+                       RF = pred_wRF,
+                       RBF = pred_wRBF,
+                       GBM = pred_wGBM)
+
+wCOMB <- train(classe ~ ., method = "rf",
+             tfControl = ctrl,
+             preProcess = c("center", "scale"),
+             tuneGrid = RFgrid,
+             data = in_Train)
+
+stopCluster(cl) # stop parallel processing
+
+pred_wCOMB <- predict(wCOMB, newdata = wTest)
+confusionMatrix(pred_wCOMB, wTest$classe)
+```
+
+```{r}
+png(filename = "tuning_plot_comb.png", width = 600, height = 400)
+plot(wCOMB, main = "Tuning Parameters for blended model")
+dev.off()
+```
+
+```{r}
+val_wCOMB <- predict(wCOMB, newdata = wVal)
+confusionMatrix(val_wCOMB, wVal$classe)
+```
+
+```{r}
+val_wRF <- predict(wRF, newdata = wVal)
+confusionMatrix(val_wRF, wVal$classe)
+```
+
+```{r}
+val_wRBF <- predict(wRBF, newdata = wVal)
+confusionMatrix(val_wRBF, wVal$classe)
+```
+
+```{r}
+val_wGBM <- predict(wGBM, newdata = wVal)
+confusionMatrix(val_wGBM, wVal$classe)
+```
