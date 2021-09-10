@@ -84,7 +84,7 @@ Now that we have trimmed the variables down to the most relevant ones, we can no
 
 With `40` variables at this stage, with various magnitudes, we'll opt to utilise trees, that is Random Forests and then stack using a Gradient Boosted tree.
 
-To ensure reliability, and to reduce bias, we will utilise cross-fold validation using the `fitControl` from `caret`.
+To ensure reliability, and to reduce bias, we will utilise cross-fold validation using the `trainControl` function from `caret`.
 
 Firstly, we will have to split our training data. We will do a 3-split as we want to also stack our models.
 
@@ -110,11 +110,96 @@ print(c(dim(wTrain), dim(wVal), dim(wTest)))
 ```
 This split gives us `r dim(wTrain)[1]` rows for Training, `r dim(wVal)[1]` for validating our stacked models, and `r dim(wTest)[1]` for testing.
 
+```{r}
+# 5-fold cross-validaiton
+set.seed(37)
+
+ctrl <- trainControl(method = "cv", number = 3)
+grid <- expand.grid(c(0.01, 0.03, 0.1, 0.3, 1.0, 3.0))
+rfgrid <- expand.grid(mtry = c(2:4))
+```
 
 ```{r}
-# creating 3 models
+wRF <- train(classe ~ ., method = "rf", tfControl = ctrl,
+             preProcess = c("center", "scale"), tuneGrid = rfgrid,
+             data = wTrain)
 
-wRF1 <- train(classe ~ ., method = "rf", data = training)
+pred_wRF <- predict(wRF, newdata = wTest)
 
+confusionMatrix(pred_wRF, wTest$classe)
+```
+
+
+
+```{r}
+wRBF <- train(classe ~ ., method = "svmRadial", tfControl = ctrl,
+              preProcess = c("center", "scale"), tuneGrid = grid,
+              tuneLength = 10, data = wTrain)
+
+pred_wRBF <- predict(wRBF, newdata = wTest)
+
+confusionMatrix(pred_wRBF, wTest$classe)
+```
+
+
+
+```{r}
+wSVM <- train(classe ~ ., method = "svmLinear", tfControl = ctrl,
+              preProcess = c("center", "scale"), tuneGrid = grid,
+              tuneLength = 10, data = wTrain)
+
+pred_wSVM <- predict(wSVM, newdata = wTest)
+
+confusionMatrix(pred_wSVM, wTest$classe)
+```
+
+
+```{r}
+par(mfrow = c(1, 3))
+plot(wRF)
+plot(wRBF)
+plot(wSVM)
+```
+
+```{r}
+
+pred_RBF <- predict(wRBF, newdata = wTest)
+pred_wSVM <- predict(wSVM, newdata = wTest)
+# train the Combined model on test predictions
+in_train <- data.frame(classe = wTrain$classe,
+                      RF = pred_wRF,
+                      RBF = pred_RBF,
+                      SVM = pred_wSVM)
+
+
+# a boosted classification tree for stacking
+wCOMB <- train(classe ~ ., method = "ada", tfControl = ctrl, data = in_train)
+```
+
+```{r}
+pred_wCOMB <- predict(wCOMB, newdata = wTest)
+
+acc(pred_wCOMB, wTest$classe)
+```
+
+```{r}
+# testing accuracy on the validation set to check Combined accuracy
+
+val_wRF <- predict(wRF, newdata = wVal)
+val_wRBF <- predict(wRBF, newdata = wVal)
+val_wSVM <- predict(wSVM, newdata = wVal)
+
+in_val <- data.frame(classe = wVal$classe,
+                     RF = val_wRF,
+                     RBF = val_wRBF,
+                     SVM = val_wSVM)
+
+val_wCOMB <- predict(wCOMB, newdata = in_val)
+
+# percentage of correct classifications using helper function
+print(c(
+  acc(val_wRF, wVal$classe), acc(val_wRBF, wVal$classe),
+  acc(val_wSVM, wVal$classe), acc(val_wCOMB, wVal$classe)
+))
 
 ```

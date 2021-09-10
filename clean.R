@@ -36,7 +36,7 @@ plot1 <- function(df){
                                  fill = classe)) +
     ylim(-1000, 1000)+
     geom_boxplot() + 
-    facet_grid(. ~ variable)
+    facet_wrap(. ~ variable, nrow = 10)
 }
 
 
