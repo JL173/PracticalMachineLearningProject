@@ -10,6 +10,7 @@ library(reshape2)
 library(caret)
 library(ggplot2)
 library(ggthemes)
+library(doParallel) # parallel processing on desktop
 ```
 
 # Executive Summary
@@ -120,9 +121,14 @@ rfgrid <- expand.grid(mtry = c(2:4))
 ```
 
 ```{r}
+cl <- makePSOCKcluster(5) # init parallel processing
+registerDoParallel(cl)
+
 wRF <- train(classe ~ ., method = "rf", tfControl = ctrl,
              preProcess = c("center", "scale"), tuneGrid = rfgrid,
              data = wTrain)
+
+stopCluster(cl) # stop parallel processing
 
 pred_wRF <- predict(wRF, newdata = wTest)
 
@@ -132,9 +138,13 @@ confusionMatrix(pred_wRF, wTest$classe)
 
 
 ```{r}
+registerDoParallel(cl)
+
 wRBF <- train(classe ~ ., method = "svmRadial", tfControl = ctrl,
               preProcess = c("center", "scale"), tuneGrid = grid,
               tuneLength = 10, data = wTrain)
+
+stopCluster(cl) # stop parallel processing
 
 pred_wRBF <- predict(wRBF, newdata = wTest)
 
@@ -144,9 +154,14 @@ confusionMatrix(pred_wRBF, wTest$classe)
 
 
 ```{r}
+cl <- makePSOCKcluster(5) # init parallel processing
+registerDoParallel(cl)
+
 wSVM <- train(classe ~ ., method = "svmLinear", tfControl = ctrl,
               preProcess = c("center", "scale"), tuneGrid = grid,
               tuneLength = 10, data = wTrain)
+
+stopCluster(cl) # stop parallel processing
 
 pred_wSVM <- predict(wSVM, newdata = wTest)
 
