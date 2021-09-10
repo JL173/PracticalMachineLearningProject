@@ -269,3 +269,4 @@ in_Val <- data.frame(classe = wVal$classe,
 val_wCOMB <- predict(wCOMB, newdata = in_Val)
 confusionMatrix(val_wCOMB, wVal$classe)
 ```
+
