@@ -6,7 +6,7 @@ get_lower_tri<-function(cormat){
 }
 
 
-clean_dataframe <- function(training, col_na = col_na){
+clean_dataframe <- function(training, col_na, col_selection){
   
   training <- select(training, -c(all_of(col_na)))
   
@@ -14,8 +14,13 @@ clean_dataframe <- function(training, col_na = col_na){
   training$new_window <- as.factor(training$new_window)
   training$classe <- as.factor(training$classe)
   
-  training <- select(training, -c("..1"))
-
+  training <- select(training, -c("...1", "new_window",
+                                  "num_window", "user_name",
+                                  "raw_timestamp_part_1",
+                                  "raw_timestamp_part_2",
+                                  "cvtd_timestamp"))
+  
+  training <- training[, c(col_selection)]
 }
 
 
@@ -32,4 +37,21 @@ plot1 <- function(df){
     ylim(-1000, 1000)+
     geom_boxplot() + 
     facet_grid(. ~ variable)
+}
+
+
+acc <- function(a, b){
+  
+  acc_ <- c()
+  
+  for (index in 1:nrow(b)){
+    if (a[index] == b[[index, 1]]){
+      acc_ <- c(acc_, 1)
+      
+    } else {
+      acc_ <- c(acc_, 0)
+    }
+    
+    mean(acc_)
+  }
 }
