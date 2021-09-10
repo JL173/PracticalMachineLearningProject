@@ -5,6 +5,8 @@ output: html_notebook
 
 ```{r, echo = FALSE, results = "none"}
 library(tidyverse)
+library(skimr)
+library(reshape2)
 library(caret)
 library(ggplot2)
 library(ggthemes)
@@ -33,7 +35,86 @@ if (!file.exists("training_data.csv")){
 }
 
 #import data
-
 training <- read_csv("training_data.csv")
 testing <- read_csv("testing_data.csv")
+```
+
+We find that due to the number of unique entries in the character columns, we'll simply convert each to factor variables, except for 'cvtd_timestamp', as this is a date.
+
+```{r}
+training$classe <- as.factor(training$classe)
+```
+
+We find that there are multiple variables that have no entries at all. We will first remove these variables. 
+
+We also find that `...1` is simply a reference number for each observation, and should not be included either.
+
+Other columns we will not include are `user_name` and datetime variables. As this may include bias depending on simply when a participant decided to perform incorrectly.
+
+```{r}
+# obtain columns with no observations
+col_na <- colnames(training)[colSums(is.na(training)) > 0]
+training <- select(training, -c(all_of(col_na)))
+training <- select(training, -c("...1", "new_window",
+                                "num_window", "user_name",
+                                "raw_timestamp_part_1",
+                                "raw_timestamp_part_2",
+                                "cvtd_timestamp"))
+```
+
+
+
+Because we are building a model to predict the `classe` of an observation, it would be best used with variable that provide a range of values based upon the `classe`. To investigate this, we produced a boxplot for each of the numeric columns and we'll only include those that produce values that differ somewhat for `classe`.
+
+```{r}
+# get columns where the variance of that column is above #
+trainVar <- training %>% summarise_if(is.numeric, var)
+
+varLevel <- which(trainVar >= 100, arr.ind = T)
+
+col_selection <- names(trainVar[varLevel[,2]])
+
+# choosing only relevant columns
+training <- training[, c(col_selection, "classe")]
+```
+
+# Modelling
+
+Now that we have trimmed the variables down to the most relevant ones, we can now choose some models and fit for each. 
+
+With `40` variables at this stage, with various magnitudes, we'll opt to utilise trees, that is Random Forests and then stack using a Gradient Boosted tree.
+
+To ensure reliability, and to reduce bias, we will utilise cross-fold validation using the `fitControl` from `caret`.
+
+Firstly, we will have to split our training data. We will do a 3-split as we want to also stack our models.
+
+```{r}
+# splitting the data
+set.seed(17373)
+
+trainIndex <- createDataPartition(training$classe,
+                                  p = .8, list = FALSE, times = 1)
+
+wTrain_ <- training[trainIndex,]
+wTest <- training[-trainIndex,]
+
+# split test further to create a validation set
+
+valIndex <- createDataPartition(wTrain_$classe,
+                                p = .7, list = FALSE, times = 1)
+
+wTrain <- wTrain_[valIndex,]
+wVal <- wTrain_[-valIndex,]
+
+print(c(dim(wTrain), dim(wVal), dim(wTest)))
+```
+This split gives us `r dim(wTrain)[1]` rows for Training, `r dim(wVal)[1]` for validating our stacked models, and `r dim(wTest)[1]` for testing.
+
+
+```{r}
+# creating 3 models
+
+wRF1 <- train(classe ~ ., method = "rf", data = training)
+
+
 ```
