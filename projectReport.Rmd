@@ -222,7 +222,7 @@ Well combine the best three models with a random forest to create a blended mode
 cl <- makePSOCKcluster(5) # init parallel processing
 registerDoParallel(cl)
 
-in_train <- data.frame(classe = wTest$classe,
+in_Train <- data.frame(classe = wTest$classe,
                        RF = pred_wRF,
                        RBF = pred_wRBF,
                        GBM = pred_wGBM)
@@ -235,7 +235,7 @@ wCOMB <- train(classe ~ ., method = "rf",
 
 stopCluster(cl) # stop parallel processing
 
-pred_wCOMB <- predict(wCOMB, newdata = wTest)
+pred_wCOMB <- predict(wCOMB, newdata = in_Train)
 confusionMatrix(pred_wCOMB, wTest$classe)
 ```
 
@@ -243,11 +243,6 @@ confusionMatrix(pred_wCOMB, wTest$classe)
 png(filename = "tuning_plot_comb.png", width = 600, height = 400)
 plot(wCOMB, main = "Tuning Parameters for blended model")
 dev.off()
-```
-
-```{r}
-val_wCOMB <- predict(wCOMB, newdata = wVal)
-confusionMatrix(val_wCOMB, wVal$classe)
 ```
 
 ```{r}
@@ -263,4 +258,14 @@ confusionMatrix(val_wRBF, wVal$classe)
 ```{r}
 val_wGBM <- predict(wGBM, newdata = wVal)
 confusionMatrix(val_wGBM, wVal$classe)
+```
+
+```{r}
+in_Val <- data.frame(classe = wVal$classe,
+                       RF = val_wRF,
+                       RBF = val_wRBF,
+                       GBM = val_wGBM)
+
+val_wCOMB <- predict(wCOMB, newdata = in_Val)
+confusionMatrix(val_wCOMB, wVal$classe)
 ```
