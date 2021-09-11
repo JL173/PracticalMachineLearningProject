@@ -1,7 +1,13 @@
 ---
 title: "Human Activity Recognition with Weight Lifting"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
 
 ```{r, echo = FALSE, results = "none"}
 library(tidyverse)
@@ -15,15 +21,17 @@ library(doParallel) # parallel processing on desktop
 
 # Executive Summary
 
+We build a blended machine learning model using Random Forest on three models, Random Forest, Radial Basis Function, and Gradient Boosted Classifier, to model the activity of 6 participants performing an exercise correctly and incorrectly 4 ways, giving 5 classes of activity. The blended model has a Kappa statistic of 0.9915, indicating extremely high accuracy on the classification of these activities.
+
 # Background
 
 Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it.
 
-In this report, we will use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+In this report, we will use data from accelerometers on the belt, forearm, arm, and dumbbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
 
 # Data
 
-```{r, cache=TRUE}
+```{r, cache=TRUE, results = 'none'}
 
 # check if exists, then download from sources
 if (!file.exists("training_data.csv")){
@@ -50,7 +58,7 @@ We find that there are multiple variables that have no entries at all. We will f
 
 We also find that `...1` is simply a reference number for each observation, and should not be included either.
 
-Other columns we will not include are `user_name` and datetime variables. As this may include bias depending on simply when a participant decided to perform incorrectly.
+Other columns we will not include are `user_name` and datetime variables. As this may include bias depending on simply who and when a participant decided to perform incorrectly.
 
 ```{r}
 # obtain columns with no observations
@@ -91,7 +99,11 @@ Firstly, we will have to split our training data. We will do a 3-split as we wan
 
 *Note: These models have been stored in "ProjectModels.RData" to save computing efforts.*
 
-```{r}
+```{r, cache=TRUE}
+load("C:/Users/JL/Desktop/Study/Coursera/Johns Hopkins Data Science/8 Practical Machine Learning/PracticalMachineLearningProject/ProjectModels.RData")
+```
+
+```{r, cache=TRUE}
 # splitting the data
 set.seed(17373)
 
@@ -111,9 +123,10 @@ wVal <- wTrain_[-valIndex,]
 
 print(c(dim(wTrain), dim(wVal), dim(wTest)))
 ```
+
 This split gives us `r dim(wTrain)[1]` rows for Training, `r dim(wVal)[1]` for validating our stacked models, and `r dim(wTest)[1]` for testing.
 
-```{r}
+```{r, cache=TRUE}
 # 5-fold cross-validaiton
 set.seed(37)
 
@@ -124,7 +137,7 @@ RBFgrid <- expand.grid(C = c(0.01, 0.03, 0.1, 0.3, 1.0, 3.0),
 SVMgrid <- expand.grid(C = c(0.01, 0.03, 0.1, 0.3, 1.0, 3.0))
 ```
 
-```{r}
+```{r, cache=TRUE, eval=FALSE}
 cl <- makePSOCKcluster(5) # init parallel processing
 registerDoParallel(cl)
 
@@ -147,7 +160,7 @@ dev.off()
 ```
 
 
-```{r}
+```{r, cache=TRUE, eval=FALSE}
 cl <- makePSOCKcluster(5) # init parallel processing
 registerDoParallel(cl)
 
@@ -170,7 +183,7 @@ dev.off()
 ```
 
 
-```{r}
+```{r, cache=TRUE, eval=FALSE}
 cl <- makePSOCKcluster(5) # init parallel processing
 registerDoParallel(cl)
 
@@ -196,7 +209,7 @@ plot(wSVM, main = "Tuning Parameters for Support Vector Machine")
 dev.off()
 ```
 
-```{r}
+```{r, cache=TRUE, eval=FALSE}
 cl <- makePSOCKcluster(5) # init parallel processing
 registerDoParallel(cl)
 
@@ -236,7 +249,7 @@ Ranking the four models on their performance on the test data, by their Kappa st
 
 Well combine the best three models with a random forest to create a blended model. We will train the Combined model with each of the other models' predictions on the test set. We will then use the Validation set to check the performance of the Combined model, and validate it with the other models.
 
-```{r}
+```{r, cache=TRUE, eval=FALSE}
 cl <- makePSOCKcluster(5) # init parallel processing
 registerDoParallel(cl)
 
@@ -293,6 +306,33 @@ Ultimately, the Combined model makes only an improvement of *one less error* tha
 
 Still, we will use this combined model to make the predictions of the 20 test observations.
 
-```{r}
+```{r, include = FALSE}
+clean_dataframe <- function(training, col_na, col_selection){
+  
+  training <- select(training, -c(all_of(col_na)))
+  training <- select(training, -c("...1", "new_window",
+                                  "num_window", "user_name",
+                                  "raw_timestamp_part_1",
+                                  "raw_timestamp_part_2",
+                                  "cvtd_timestamp"))
+  training <- training[, c(col_selection)]
+}
+```
 
+```{r}
+# clean_dataframe is a helper function that repeats
+# the same steps as for cleaning training data
+test_sample <- clean_dataframe(testing, col_na, col_selection)
+
+test_wRF <- predict(wRF, newdata = test_sample)
+test_wRBF <- predict(wRBF, newdata = test_sample)
+test_wGBM <- predict(wGBM, newdata = test_sample)
+
+in_test <- data.frame(RF = test_wRF,
+                      RBF = test_wRBF,
+                      GBM = test_wGBM)
+
+predict(wCOMB, newdata = in_test)
+
+# all 20 were predicted correctly
 ```

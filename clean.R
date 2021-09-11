@@ -9,19 +9,15 @@ get_lower_tri<-function(cormat){
 clean_dataframe <- function(training, col_na, col_selection){
   
   training <- select(training, -c(all_of(col_na)))
-  
-  training$user_name <- as.factor(training$user_name)
-  training$new_window <- as.factor(training$new_window)
-  training$classe <- as.factor(training$classe)
-  
   training <- select(training, -c("...1", "new_window",
                                   "num_window", "user_name",
                                   "raw_timestamp_part_1",
                                   "raw_timestamp_part_2",
                                   "cvtd_timestamp"))
-  
   training <- training[, c(col_selection)]
 }
+
+
 
 
 plot1 <- function(df){
