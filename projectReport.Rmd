@@ -133,7 +133,9 @@ wRF <- train(classe ~ ., method = "rf", tfControl = ctrl,
              data = wTrain)
 
 stopCluster(cl) # stop parallel processing
+```
 
+```{r}
 pred_wRF <- predict(wRF, newdata = wTest)
 
 confusionMatrix(pred_wRF, wTest$classe)
@@ -154,7 +156,9 @@ wRBF <- train(classe ~ ., method = "svmRadial", tfControl = ctrl,
               tuneLength = 10, data = wTrain)
 
 stopCluster(cl) # stop parallel processing
+```
 
+```{r}
 pred_wRBF <- predict(wRBF, newdata = wTest)
 
 confusionMatrix(pred_wRBF, wTest$classe)
@@ -177,11 +181,14 @@ wSVM <- train(classe ~ ., method = "svmLinear",
               tuneLength = 10, data = wTrain)
 
 stopCluster(cl) # stop parallel processing
+```
 
+```{r}
 pred_wSVM <- predict(wSVM, newdata = wTest)
 
 confusionMatrix(pred_wSVM, wTest$classe)
 ```
+
 
 ```{r}
 png(filename = "tuning_plot_svm.png", width = 600, height = 400)
@@ -200,7 +207,9 @@ wGBM <- train(classe ~ ., method = "gbm",
               data = wTrain)
 
 stopCluster(cl) # stop parallel processing
+```
 
+```{r}
 pred_wGBM <- predict(wGBM, newdata = wTest)
 confusionMatrix(pred_wGBM, wTest$classe)
 ```
@@ -218,7 +227,14 @@ From the models, we can see that the best parameters are
 - Support Vector Machine: Cost = 3.0
 - Gradient Boosted Classifier: Max Iter = 150, Max Depth = 3
 
-Well combine the best three models with a random forest to create a blended model
+Ranking the four models on their performance on the test data, by their Kappa statistic, we have
+
+- Random Forest: Kappa = 0.9887
+- Radial Basis Function: Kappa = 0.9677
+- Gradient Boosted Classifier: Kappa = 0.9548
+- Support Vector Machine: Kappa = 0.7323
+
+Well combine the best three models with a random forest to create a blended model. We will train the Combined model with each of the other models' predictions on the test set. We will then use the Validation set to check the performance of the Combined model, and validate it with the other models.
 
 ```{r}
 cl <- makePSOCKcluster(5) # init parallel processing
@@ -236,9 +252,6 @@ wCOMB <- train(classe ~ ., method = "rf",
              data = in_Train)
 
 stopCluster(cl) # stop parallel processing
-
-pred_wCOMB <- predict(wCOMB, newdata = in_Train)
-confusionMatrix(pred_wCOMB, wTest$classe)
 ```
 
 ```{r}
@@ -251,16 +264,19 @@ dev.off()
 val_wRF <- predict(wRF, newdata = wVal)
 confusionMatrix(val_wRF, wVal$classe)
 ```
+This Random Forest model has given us a high accuracy, `0.9913`, on the validation set, with only `41` mis-classified observations. The Kappa statistic is `0.989`, which is fair to say that there is an extremely strong level of agreement in the classification of observations.
 
 ```{r}
 val_wRBF <- predict(wRBF, newdata = wVal)
 confusionMatrix(val_wRBF, wVal$classe)
 ```
+This Radial Basis Function model has given us a high accuracy, `0.9764`, on the validation set, with only `111` mis-classified observations. The Kappa statistic is `0.9702`, which is fair to say that there is a very strong level of agreement in the classification of observations.
 
 ```{r}
 val_wGBM <- predict(wGBM, newdata = wVal)
 confusionMatrix(val_wGBM, wVal$classe)
 ```
+This Gradient Boosted model has given us a high accuracy, `0.9609`, on the validation set, with only `184` mis-classified observations. The Kappa statistic is `0.9505`, which is fair to say that there is a very strong level of agreement in the classification of observations.
 
 ```{r}
 in_Val <- data.frame(classe = wVal$classe,
@@ -271,5 +287,12 @@ in_Val <- data.frame(classe = wVal$classe,
 val_wCOMB <- predict(wCOMB, newdata = in_Val)
 confusionMatrix(val_wCOMB, wVal$classe)
 ```
+This Combined model has given us a high accuracy, `0.9915`, on the validation set, with only `40` mis-classified observations. The Kappa statistic is `0.9892`, which is fair to say that there is an extremely strong level of agreement in the classification of observations.
 
-Our models did not train on the validation set, and so we can use the results on this set to estimate the 'out of sample error'. Our combined model gave us an accuracy of `0.9915` on the validation set. This is only a slight improvement of the Random Forest Model, `0.9913`, but since Random Forests can be prone to overfitting, combining with the Radial Basis Function and Support Vector Machine should help alleviate any bias in that sense, and it appears to have done so.
+Ultimately, the Combined model makes only an improvement of *one less error* than our strongest individual model, the Random Forest model. Thus, the added complexity of including this, on top of the other two models, frankly, is not worth the effort for scaling up and training on other datasets, when the Random Forest model already has near matched performance.
+
+Still, we will use this combined model to make the predictions of the 20 test observations.
+
+```{r}
+
+```
