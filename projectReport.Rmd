@@ -21,7 +21,7 @@ library(doParallel) # parallel processing on desktop
 
 # Executive Summary
 
-We build a blended machine learning model using Random Forest on three models, Random Forest, Radial Basis Function, and Gradient Boosted Classifier, to model the activity of 6 participants performing an exercise correctly and incorrectly 4 ways, giving 5 classes of activity. The blended model has a Kappa statistic of 0.9915, indicating extremely high accuracy on the classification of these activities.
+We build a blended machine learning model using Random Forest on three models, Random Forest, Radial Basis Function, and Gradient Boosted Classifier, to model the activity of 6 participants performing an exercise correctly and incorrectly 4 ways, giving 5 classes of activity. The blended model has a Kappa statistic of 0.9915, indicating extremely high accuracy on the classification of these activities, and an out-of-sample error of 0.0085.
 
 # Background
 
@@ -344,7 +344,7 @@ val_wCOMB <- predict(wCOMB, newdata = in_Val)
 confusionMatrix(val_wCOMB, wVal$classe)
 ```
 
-This Combined model has given us a high accuracy, `0.9915`, on the validation set, with only `40` mis-classified observations. The Kappa statistic is `0.9892`, which is fair to say that there is an extremely strong level of agreement in the classification of observations.
+This Combined model has given us a high accuracy, `0.9915`, on the validation set, with only `40` mis-classified observations. The Kappa statistic is `0.9892`, which is fair to say that there is an extremely strong level of agreement in the classification of observations,and an out-of-sample error of 0.0085 (1 - Kappa).
 
 Ultimately, the Combined model makes only an improvement of *one less error* than our strongest individual model, the Random Forest model. Thus, the added complexity of including this, on top of the other two models, frankly, is not worth the effort for scaling up and training on other datasets, when the Random Forest model already has near matched performance.
 
