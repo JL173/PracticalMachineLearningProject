@@ -89,6 +89,8 @@ To ensure reliability, and to reduce bias, we will utilise cross-fold validation
 
 Firstly, we will have to split our training data. We will do a 3-split as we want to also stack our models.
 
+*Note: These models have been stored in "ProjectModels.RData" to save computing efforts.*
+
 ```{r}
 # splitting the data
 set.seed(17373)
@@ -270,3 +272,4 @@ val_wCOMB <- predict(wCOMB, newdata = in_Val)
 confusionMatrix(val_wCOMB, wVal$classe)
 ```
 
+Our models did not train on the validation set, and so we can use the results on this set to estimate the 'out of sample error'. Our combined model gave us an accuracy of `0.9915` on the validation set. This is only a slight improvement of the Random Forest Model, `0.9913`, but since Random Forests can be prone to overfitting, combining with the Radial Basis Function and Support Vector Machine should help alleviate any bias in that sense, and it appears to have done so.
