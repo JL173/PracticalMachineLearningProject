@@ -87,11 +87,35 @@ col_selection <- names(trainVar[varLevel[,2]])
 training <- training[, c(col_selection, "classe")]
 ```
 
+```{r, fig.height = 16, fig.width = 8}
+
+plot1 <- function(df){
+
+  df_long <- melt(df, id.vars = "classe")
+  
+  df_long$classe <- factor(df_long$classe,
+                           levels = c("A", "B", "C", "D", "E"))
+  
+  ggplot(data = df_long, aes(x = classe,
+                                 y = value,
+                                 fill = classe)) +
+    ylim(-1000, 1000)+
+    geom_boxplot() + 
+    facet_wrap(. ~ variable, nrow = 10)
+}
+plot1(training)
+```
+
 # Modelling
 
 Now that we have trimmed the variables down to the most relevant ones, we can now choose some models and fit for each. 
 
-With `40` variables at this stage, with various magnitudes, we'll opt to utilise trees, that is Random Forests and then stack using a Gradient Boosted tree.
+With `40` variables at this stage, with various magnitudes, we'll opt to utilise the following models to minimise bias in our combined model.
+
+- Random Forests
+- Radial Basis Functions
+- Support Vector Machine
+- Gradient Boosted Classifier
 
 To ensure reliability, and to reduce bias, we will utilise cross-fold validation using the `trainControl` function from `caret`.
 
@@ -100,7 +124,16 @@ Firstly, we will have to split our training data. We will do a 3-split as we wan
 *Note: These models have been stored in "ProjectModels.RData" to save computing efforts.*
 
 ```{r, cache=TRUE}
-load("C:/Users/JL/Desktop/Study/Coursera/Johns Hopkins Data Science/8 Practical Machine Learning/PracticalMachineLearningProject/ProjectModels.RData")
+if (!file.exists("ProjectModels.RData")){
+    download.file("https://github.com/JL173/PracticalMachineLearningProject/raw/main/ProjectModels.RData",
+                  "ProjectModels.RData")
+    }
+load("ProjectModels.RData")
+
+# wRF = Random Forest Model
+# wRBF = Radial Basis Function Model
+# wSVM = Support Vector Machine Model
+# wCOMB = combined model using Random Forest on other model predictions
 ```
 
 ```{r, cache=TRUE}
@@ -153,10 +186,11 @@ pred_wRF <- predict(wRF, newdata = wTest)
 
 confusionMatrix(pred_wRF, wTest$classe)
 ```
+
 ```{r}
-png(filename = "tuning_plot_rf.png", width = 600, height = 400)
+#png(filename = "tuning_plot_rf.png", width = 600, height = 400)
 plot(wRF, main = "Tuning Parameters for Random Forest")
-dev.off()
+#dev.off()
 ```
 
 
@@ -176,10 +210,11 @@ pred_wRBF <- predict(wRBF, newdata = wTest)
 
 confusionMatrix(pred_wRBF, wTest$classe)
 ```
+
 ```{r}
-png(filename = "tuning_plot_rbf.png", width = 600, height = 400)
+#png(filename = "tuning_plot_rbf.png", width = 600, height = 400)
 plot(wRBF, main = "Tuning Parameters for Radial Basis Function")
-dev.off()
+#dev.off()
 ```
 
 
@@ -204,9 +239,9 @@ confusionMatrix(pred_wSVM, wTest$classe)
 
 
 ```{r}
-png(filename = "tuning_plot_svm.png", width = 600, height = 400)
+#png(filename = "tuning_plot_svm.png", width = 600, height = 400)
 plot(wSVM, main = "Tuning Parameters for Support Vector Machine")
-dev.off()
+#dev.off()
 ```
 
 ```{r, cache=TRUE, eval=FALSE}
@@ -227,14 +262,14 @@ pred_wGBM <- predict(wGBM, newdata = wTest)
 confusionMatrix(pred_wGBM, wTest$classe)
 ```
 
-
 ```{r}
-png(filename = "tuning_plot_gbm.png", width = 600, height = 400)
+#png(filename = "tuning_plot_gbm.png", width = 600, height = 400)
 plot(wGBM, main = "Tuning Parameters for Gradient Boosted Classifier")
-dev.off()
+#dev.off()
 ```
 
 From the models, we can see that the best parameters are
+
 - Random Forest: predictors = 4
 - Radial Basis Function: Cost = 3.0, sigma = 0.03
 - Support Vector Machine: Cost = 3.0
@@ -268,27 +303,30 @@ stopCluster(cl) # stop parallel processing
 ```
 
 ```{r}
-png(filename = "tuning_plot_comb.png", width = 600, height = 400)
+#png(filename = "tuning_plot_comb.png", width = 600, height = 400)
 plot(wCOMB, main = "Tuning Parameters for blended model")
-dev.off()
+#dev.off()
 ```
 
 ```{r}
 val_wRF <- predict(wRF, newdata = wVal)
 confusionMatrix(val_wRF, wVal$classe)
 ```
+
 This Random Forest model has given us a high accuracy, `0.9913`, on the validation set, with only `41` mis-classified observations. The Kappa statistic is `0.989`, which is fair to say that there is an extremely strong level of agreement in the classification of observations.
 
 ```{r}
 val_wRBF <- predict(wRBF, newdata = wVal)
 confusionMatrix(val_wRBF, wVal$classe)
 ```
+
 This Radial Basis Function model has given us a high accuracy, `0.9764`, on the validation set, with only `111` mis-classified observations. The Kappa statistic is `0.9702`, which is fair to say that there is a very strong level of agreement in the classification of observations.
 
 ```{r}
 val_wGBM <- predict(wGBM, newdata = wVal)
 confusionMatrix(val_wGBM, wVal$classe)
 ```
+
 This Gradient Boosted model has given us a high accuracy, `0.9609`, on the validation set, with only `184` mis-classified observations. The Kappa statistic is `0.9505`, which is fair to say that there is a very strong level of agreement in the classification of observations.
 
 ```{r}
@@ -300,6 +338,7 @@ in_Val <- data.frame(classe = wVal$classe,
 val_wCOMB <- predict(wCOMB, newdata = in_Val)
 confusionMatrix(val_wCOMB, wVal$classe)
 ```
+
 This Combined model has given us a high accuracy, `0.9915`, on the validation set, with only `40` mis-classified observations. The Kappa statistic is `0.9892`, which is fair to say that there is an extremely strong level of agreement in the classification of observations.
 
 Ultimately, the Combined model makes only an improvement of *one less error* than our strongest individual model, the Random Forest model. Thus, the added complexity of including this, on top of the other two models, frankly, is not worth the effort for scaling up and training on other datasets, when the Random Forest model already has near matched performance.
@@ -332,7 +371,7 @@ in_test <- data.frame(RF = test_wRF,
                       RBF = test_wRBF,
                       GBM = test_wGBM)
 
-predict(wCOMB, newdata = in_test)
+#predict(wCOMB, newdata = in_test)
 
 # all 20 were predicted correctly
 ```
