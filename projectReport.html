@@ -176,11 +176,13 @@ pre code {
 </div>
 <div id="background" class="section level1">
 <h1>Background</h1>
-<p>Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it.</p>
+<p>Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. More information is abailable from this <a href="http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har">website</a></p>
 <p>In this report, we will use data from accelerometers on the belt, forearm, arm, and dumbbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.</p>
 </div>
 <div id="data" class="section level1">
 <h1>Data</h1>
+<p>Training data is available <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">here</a></p>
+<p>Test data is available <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">here</a></p>
 <pre class="r"><code># check if exists, then download from sources
 if (!file.exists(&quot;training_data.csv&quot;)){
   download.file(&quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;, &quot;training_data.csv&quot;)
